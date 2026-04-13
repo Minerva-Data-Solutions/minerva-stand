@@ -1,0 +1,22 @@
+{
+  "tools": {
+    "exec": {
+      "allowedCommands": ["ls", "pwd", "git", "pytest"],
+      "blockedCommands": ["rm", "shutdown", "reboot", "dd"],
+      "allowedPaths": ["${WORKSPACE}", "${MEDIA}"],
+      "blockedPaths": ["/etc", "/dev", "/proc", "/sys", "~/.ssh"]
+    },
+    "readFile": {
+      "allowedCommands": [],
+      "blockedCommands": [],
+      "allowedPaths": ["${WORKSPACE}", "${MEDIA}"],
+      "blockedPaths": ["/etc", "/dev", "/proc", "/sys", "~/.ssh"]
+    },
+    "writeFile": {
+      "allowedCommands": [],
+      "blockedCommands": [],
+      "allowedPaths": ["${WORKSPACE}", "${MEDIA}"],
+      "blockedPaths": ["/etc", "/dev", "/proc", "/sys", "~/.ssh"]
+    }
+  }
+}
