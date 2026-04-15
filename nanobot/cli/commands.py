@@ -554,8 +554,10 @@ def serve(
         raise typer.Exit(1)
 
     from loguru import logger
+
     from nanobot.agent.loop import AgentLoop
     from nanobot.api.server import create_app
+    from nanobot.api.workbench import load_workbench_runtime
     from nanobot.bus.queue import MessageBus
     from nanobot.session.manager import SessionManager
 
@@ -610,7 +612,24 @@ def serve(
         )
     console.print()
 
-    api_app = create_app(agent_loop, model_name=model_name, request_timeout=timeout)
+    workbench = load_workbench_runtime(
+        workspace_root=runtime_config.workspace_path,
+        audit_db_path=runtime_config.audit_db_path,
+        agent_loop=agent_loop,
+        model_name=model_name,
+        request_timeout=timeout,
+    )
+    if workbench:
+        console.print("  [cyan]Workbench[/cyan] : /api/workbench/* (MINERVA_UI_USER)")
+        console.print(f"  [cyan]UI CORS[/cyan]     : {', '.join(sorted(workbench.cors_origins))}")
+    console.print()
+
+    api_app = create_app(
+        agent_loop,
+        model_name=model_name,
+        request_timeout=timeout,
+        workbench=workbench,
+    )
 
     async def on_startup(_app):
         await agent_loop._connect_mcp()
@@ -622,6 +641,29 @@ def serve(
     api_app.on_cleanup.append(on_cleanup)
 
     web.run_app(api_app, host=host, port=port, print=lambda msg: logger.info(msg))
+
+
+@app.command("serve-ui")
+def serve_ui(
+    port: int = typer.Option(5174, "--port", "-p", help="Static UI port"),
+    host: str = typer.Option("0.0.0.0", "--host", "-H", help="Bind address"),
+    dist: str | None = typer.Option(
+        None,
+        "--dist",
+        "-d",
+        help="Path to Vite build output (default: MINERVA_UI_DIST or /app/ui/dist)",
+    ),
+):
+    """Serve the Minerva UI static build."""
+    from nanobot.http.spa_static import run_spa_server
+
+    root = Path(dist or os.environ.get("MINERVA_UI_DIST", "/app/ui/dist"))
+    console.print(f"{__logo__} Minerva UI  http://{host}:{port}/")
+    try:
+        run_spa_server(host, port, root)
+    except FileNotFoundError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1) from e
 
 
 # ============================================================================

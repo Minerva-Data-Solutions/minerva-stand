@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-[3px] h-[3px];
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/[0.08] rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/[0.15];
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  }
+}
+
+@layer components {
+  .btn-ghost-primary {
+    @apply btn bg-primary/10 text-primary border border-primary/20
+      hover:bg-primary/20 hover:border-primary/35 transition-all;
+  }
+
+  .input-minerva {
+    @apply bg-base-200/60 border-white/[0.08] text-base-content placeholder-base-content/25
+      focus:border-primary/50 focus:outline-none focus:ring-0;
+    transition: border-color 0.15s ease;
+  }
+  .input-minerva:focus {
+    box-shadow: 0 0 0 1px rgba(226, 77, 39, 0.15);
+  }
+}
+
+@layer utilities {
+  .bg-dots {
+    background-image: radial-gradient(
+      circle,
+      rgba(226, 77, 39, 0.07) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 28px rgba(226, 77, 39, 0.3);
+  }
+
+  .border-subtle {
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .msg-enter-active {
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .surface {
+    @apply bg-base-100 border border-subtle rounded-xl;
+  }
+
+  .surface-2 {
+    @apply bg-base-200/50 border border-subtle rounded-xl;
+  }
+}

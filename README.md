@@ -282,8 +282,48 @@ docker run --rm -it \
   channels login whatsapp
 ```
 
+## Minerva Workbench (UI)
+The image includes a Vite + Vue + DaisyUI workbench for chat, audit SQLite browsing, and workspace file editing. It is served on its own port by `nanobot serve-ui`; the API extensions live on `nanobot serve`.
+
+**Compose:** `docker compose up -d` starts `stand-api` (8900) and `stand-ui` (5174). Set credentials on the API service:
+
+| Variable | Purpose |
+|----------|---------|
+| `MINERVA_UI_USER` | Single-user login name |
+| `MINERVA_UI_PASSWORD` | Password |
+| `MINERVA_UI_SECRET` | Optional HMAC secret for session cookies (defaults to a derived value) |
+| `MINERVA_UI_CORS_ORIGINS` | Comma-separated browser `Origin` values (optional; defaults include common dev ports on localhost / 127.0.0.1) |
+
+**Browser ↔ API:** Open the UI and API using the **same hostname** (both `localhost` or both `127.0.0.1`). Mixing them breaks cookies. The production build resolves the API as `http(s)://<same-host-as-ui>:8900` unless you set `VITE_API_BASE_URL`. **`npm run dev`** proxies `/api`, `/health`, and `/v1` to `VITE_PROXY_TARGET` (default `http://127.0.0.1:8900`).
+
+**Manual run:**
+
+```bash
+docker run -d --name minerva-ui -p 5174:5174 \
+  -v "$HOME/.nanobot:/home/nanobot/.nanobot" \
+  ghcr.io/<org>/minerva-stand:latest \
+  serve-ui --host 0.0.0.0 --port 5174 --dist /app/ui/dist
+```
+
+**Local UI development:**
+
+```bash
+cd ui && npm install && npm run dev
+```
+
+Run `nanobot serve` on port 8900 in another terminal so `/api` proxies correctly.
+
 ## Docker Compose
 For ongoing deployments, Compose is the recommended path.
+
+The checked-in `docker-compose.yml` attaches an optional `env_file` (`.env`) to every service. Copy [.env.example](.env.example) to `.env`, set at least `OPENROUTER_API_KEY` (or another provider key that matches `NANOBOT_PROVIDER` / `NANOBOT_MODEL`), and set `MINERVA_UI_USER` / `MINERVA_UI_PASSWORD` if you use the API workbench. On start, the entrypoint runs [docker/bootstrap_config.py](docker/bootstrap_config.py), which updates `~/.nanobot/config.json` with `${VAR}` placeholders for any provider keys present in the environment, so nanobot can resolve secrets at runtime without storing raw keys in the mounted file.
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+If your Compose version does not support `required: false` for `env_file`, create an empty `.env` or remove the `env_file` block and export variables in your shell.
 
 The example below shows the intended published-image setup. The checked-in `docker-compose.yml` in this repo is still useful for local source builds, but production-style deployments should prefer `image: ghcr.io/<org>/minerva-stand:latest`.
 

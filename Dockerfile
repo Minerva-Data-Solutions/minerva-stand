@@ -32,19 +32,33 @@ RUN git config --global --add url."https://github.com/".insteadOf ssh://git@gith
     npm install && npm run build
 WORKDIR /app
 
+ARG VITE_API_BASE_URL=
+ARG VITE_API_PORT=8900
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_API_PORT=${VITE_API_PORT}
+COPY ui/package.json ui/package-lock.json ./ui/
+WORKDIR /app/ui
+RUN npm ci
+COPY ui/ ./
+RUN npm run build
+WORKDIR /app
+
 # Create non-root user and config directory
 RUN useradd -m -u 1000 -s /bin/bash nanobot && \
     mkdir -p /home/nanobot/.nanobot && \
     chown -R nanobot:nanobot /home/nanobot /app
 
+COPY docker/bootstrap_config.py /app/docker/bootstrap_config.py
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh && \
+    chown nanobot:nanobot /app/docker/bootstrap_config.py
 
 USER nanobot
 ENV HOME=/home/nanobot
 
-# Gateway default port
 EXPOSE 18790
+EXPOSE 8900
+EXPOSE 5174
 
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["status"]

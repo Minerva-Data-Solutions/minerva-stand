@@ -12,4 +12,7 @@ Fix (pick one):
 EOF
     exit 1
 fi
+if [ -f /app/docker/bootstrap_config.py ]; then
+    python /app/docker/bootstrap_config.py || exit 1
+fi
 exec nanobot "$@"

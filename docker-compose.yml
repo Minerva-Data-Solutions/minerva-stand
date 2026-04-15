@@ -2,6 +2,12 @@ x-common-config: &common-config
   build:
     context: .
     dockerfile: Dockerfile
+    args:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+      VITE_API_PORT: ${VITE_API_PORT:-8900}
+  env_file:
+    - path: .env
+      required: false
   volumes:
     - ~/.nanobot:/home/nanobot/.nanobot
   cap_drop:
@@ -13,8 +19,8 @@ x-common-config: &common-config
     - seccomp=unconfined
 
 services:
-  nanobot-gateway:
-    container_name: nanobot-gateway
+  stand-gateway:
+    container_name: stand-gateway
     <<: *common-config
     command: ["gateway"]
     restart: unless-stopped
@@ -29,8 +35,8 @@ services:
           cpus: "0.25"
           memory: 256M
 
-  nanobot-api:
-    container_name: nanobot-api
+  stand-api:
+    container_name: stand-api
     <<: *common-config
     command:
       ["serve", "--host", "0.0.0.0", "-w", "/home/nanobot/.nanobot/api-workspace"]
@@ -46,7 +52,23 @@ services:
           cpus: "0.25"
           memory: 256M
 
-  nanobot-cli:
+  stand-ui:
+    container_name: stand-ui
+    <<: *common-config
+    command: ["serve-ui", "--host", "0.0.0.0", "--port", "5174", "--dist", "/app/ui/dist"]
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:5174:5174
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 64M
+
+  stand-cli:
     <<: *common-config
     profiles:
       - cli
