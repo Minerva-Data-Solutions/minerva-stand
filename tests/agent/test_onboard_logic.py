@@ -347,6 +347,17 @@ class TestSyncWorkspaceTemplates:
         for path in added:
             assert not Path(path).is_absolute()
 
+    def test_creates_guardrail_file(self, tmp_path):
+        """GUARDRAIL.md must be seeded so the safety policy is always present."""
+        workspace = tmp_path / "workspace"
+
+        sync_workspace_templates(workspace, silent=True)
+
+        guardrail = workspace / "GUARDRAIL.md"
+        assert guardrail.is_file(), "GUARDRAIL.md should be seeded by sync_workspace_templates"
+        body = guardrail.read_text(encoding="utf-8")
+        assert "GUARDRAIL" in body
+
 
 class TestProviderChannelInfo:
     """Tests for provider and channel info retrieval."""

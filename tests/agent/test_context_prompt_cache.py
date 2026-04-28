@@ -32,6 +32,12 @@ def test_bootstrap_files_are_backed_by_templates() -> None:
         assert (template_dir / filename).is_file(), f"missing bootstrap template: {filename}"
 
 
+def test_guardrail_template_bundled() -> None:
+    """GUARDRAIL.md must be bundled so guardrails apply even on stale workspaces."""
+    template_dir = pkg_files("nanobot") / "templates"
+    assert (template_dir / "GUARDRAIL.md").is_file(), "missing bundled GUARDRAIL.md"
+
+
 def test_system_prompt_stays_stable_when_clock_changes(tmp_path, monkeypatch) -> None:
     """System prompt should not change just because wall clock minute changes."""
     monkeypatch.setattr(datetime_module, "datetime", _FakeDatetime)

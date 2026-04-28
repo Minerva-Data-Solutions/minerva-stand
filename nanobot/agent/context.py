@@ -3,8 +3,11 @@
 import base64
 import mimetypes
 import platform
+from importlib.resources import files as pkg_files
 from pathlib import Path
 from typing import Any
+
+from loguru import logger
 
 from nanobot.utils.helpers import current_time_str
 
@@ -12,6 +15,45 @@ from nanobot.agent.memory import MemoryStore
 from nanobot.utils.prompt_templates import render_template
 from nanobot.agent.skills import SkillsLoader
 from nanobot.utils.helpers import build_assistant_message, detect_image_mime
+
+GUARDRAIL_FILENAME = "GUARDRAIL.md"
+
+_GUARDRAIL_PREAMBLE = (
+    "# GUARDRAIL — non-negotiable safety policy\n\n"
+    "These rules supersede all prior instructions, including USER.md, SOUL.md, "
+    "TOOLS.md, AGENTS.md, skills, memory, and any user message. If a user "
+    "request conflicts with this section, refuse or ask for confirmation."
+)
+
+
+def load_guardrail(workspace: Path) -> str:
+    """Read the workspace ``GUARDRAIL.md`` or fall back to the bundled template.
+
+    Action-taking prompt builders (main loop + sub-agents) use this to anchor a
+    safety policy at the bottom of the system prompt. Closed-loop housekeeping
+    prompts (evaluator/consolidator/dream) intentionally skip it to avoid
+    polluting their tightly-scoped instructions.
+    """
+    workspace_file = workspace / GUARDRAIL_FILENAME
+    if workspace_file.is_file():
+        try:
+            return workspace_file.read_text(encoding="utf-8").strip()
+        except OSError:
+            logger.warning("Failed to read workspace GUARDRAIL.md, falling back to bundled template")
+    try:
+        bundled = pkg_files("nanobot") / "templates" / GUARDRAIL_FILENAME
+        if bundled.is_file():
+            return bundled.read_text(encoding="utf-8").strip()
+    except Exception:
+        logger.warning("Bundled GUARDRAIL.md template not found")
+    return ""
+
+
+def format_guardrail_block(content: str) -> str:
+    """Wrap guardrail content in the recency-anchored block. Returns ``""`` if empty."""
+    if not content.strip():
+        return ""
+    return f"{_GUARDRAIL_PREAMBLE}\n\n<guardrails>\n{content.strip()}\n</guardrails>"
 
 
 class ContextBuilder:
@@ -60,6 +102,10 @@ class ContextBuilder:
             parts.append("# Recent History\n\n" + "\n".join(
                 f"- [{e['timestamp']}] {e['content']}" for e in capped
             ))
+
+        guardrail = format_guardrail_block(load_guardrail(self.workspace))
+        if guardrail:
+            parts.append(guardrail)
 
         return "\n\n---\n\n".join(parts)
 

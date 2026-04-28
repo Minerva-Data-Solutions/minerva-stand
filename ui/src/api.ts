@@ -156,6 +156,71 @@ export async function writeFile(path: string, content: string) {
   }
 }
 
+export interface BootstrapFile {
+  name: string;
+  present: boolean;
+  size: number;
+  mtime: number;
+}
+
+export async function getBootstrapStatus() {
+  let r: Response;
+  try {
+    r = await apiFetch("/api/workbench/bootstrap");
+  } catch {
+    throw new Error("Network error — API unreachable.");
+  }
+  const j = await r.json();
+  if (!r.ok) {
+    throw new Error(apiErrorMessage(j, "Bootstrap status failed"));
+  }
+  return j as { workspaceRoot: string; files: BootstrapFile[] };
+}
+
+export async function seedBootstrap() {
+  let r: Response;
+  try {
+    r = await apiFetch("/api/workbench/bootstrap/seed", { method: "POST" });
+  } catch {
+    throw new Error("Network error — API unreachable.");
+  }
+  const j = await r.json();
+  if (!r.ok) {
+    throw new Error(apiErrorMessage(j, "Restore failed"));
+  }
+  return (j as { added: string[] }).added;
+}
+
+export async function mkdir(path: string) {
+  let r: Response;
+  try {
+    r = await apiFetch("/api/workbench/files/mkdir", {
+      method: "POST",
+      body: JSON.stringify({ path }),
+    });
+  } catch {
+    throw new Error("Network error — API unreachable.");
+  }
+  const j = await r.json();
+  if (!r.ok) {
+    throw new Error(apiErrorMessage(j, "Create folder failed"));
+  }
+}
+
+export async function deletePath(path: string) {
+  const q = new URLSearchParams({ path });
+  let r: Response;
+  try {
+    r = await apiFetch(`/api/workbench/files?${q}`, { method: "DELETE" });
+  } catch {
+    throw new Error("Network error — API unreachable.");
+  }
+  const j = await r.json();
+  if (!r.ok) {
+    throw new Error(apiErrorMessage(j, "Delete failed"));
+  }
+}
+
 export async function sqliteTables() {
   let r: Response;
   try {

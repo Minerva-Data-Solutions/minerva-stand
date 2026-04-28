@@ -12,21 +12,21 @@ Information about the user to help personalize interactions.
 
 ### Communication Style
 
-- [ ] Casual
-- [ ] Professional
-- [ ] Technical
+- Casual
+- Professional
+- Technical
 
 ### Response Length
 
-- [ ] Brief and concise
-- [ ] Detailed explanations
-- [ ] Adaptive based on question
+- Brief and concise
+- Detailed explanations
+- Adaptive based on question
 
 ### Technical Level
 
-- [ ] Beginner
-- [ ] Intermediate
-- [ ] Expert
+- Beginner
+- Intermediate
+- Expert
 
 ## Work Context
 
@@ -37,7 +37,9 @@ Information about the user to help personalize interactions.
 ## Topics of Interest
 
 - 
+
 - 
+
 - 
 
 ## Special Instructions

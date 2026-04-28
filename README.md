@@ -14,6 +14,14 @@ For runtime compatibility today:
 - the default runtime root is still `~/.nanobot`
 - the Python package name is still `nanobot-ai`
 
+## Architecture
+
+![Minerva Stand architecture](docs/architecture.png)
+
+The runtime is packaged as **one Docker image**. Conceptually, Telegram, WhatsApp, and the Stand UI send traffic into the same agent core: a **heartbeat** loop of messages, LLM, tools, and responses, governed by guardrail policy (`GUARDRAIL.md` in the workspace templates plus JSON policy in `guardrails.json` on the host). **Context** is workspace markdown and skills (for example `MEMORY.md`, `USER.md`, `SOUL.md`, and `skills/` under `~/.nanobot/workspace/`). **SQLite** audit data lives at `~/.nanobot/audit/agent_audit.db`.
+
+**How that maps to deployment:** the smallest setup is **one container** (typically `gateway`) with a single bind mount to `/home/nanobot/.nanobot`. The checked-in Compose file runs **additional containers from the same image** (`serve`, `serve-ui`) so API and UI are separate processes but still share that mount—same logical stack as the diagram, optional process split.
+
 ## Fork Lineage
 Minerva Stand keeps the lightweight Nanobot architecture and extends it with Minerva-focused operational controls, including:
 - SQLite audit logging for agent runs and tool activity
@@ -22,7 +30,7 @@ Minerva Stand keeps the lightweight Nanobot architecture and extends it with Min
 - Docker-first deployment guidance
 
 ## Docker Deployment
-Minerva Stand is intended to be deployed with a public container image.
+Minerva Stand is intended to be deployed as **one published container image** (see [Architecture](#architecture)); you run selected entrypoints (`gateway`, `serve`, `serve-ui`, CLI) from that image with a shared host mount.
 
 Until the final registry path is fixed, use this placeholder:
 
@@ -314,7 +322,7 @@ cd ui && npm install && npm run dev
 Run `nanobot serve` on port 8900 in another terminal so `/api` proxies correctly.
 
 ## Docker Compose
-For ongoing deployments, Compose is the recommended path.
+For ongoing deployments, Compose is the recommended path. It starts **multiple containers from the same Minerva Stand image** (`stand-gateway`, `stand-api`, `stand-ui`), each with the same `~/.nanobot` volume, matching the [Architecture](#architecture) diagram’s stack while isolating processes.
 
 The checked-in `docker-compose.yml` attaches an optional `env_file` (`.env`) to every service. Copy [.env.example](.env.example) to `.env`, set at least `OPENROUTER_API_KEY` (or another provider key that matches `NANOBOT_PROVIDER` / `NANOBOT_MODEL`), and set `MINERVA_UI_USER` / `MINERVA_UI_PASSWORD` if you use the API workbench. On start, the entrypoint runs [docker/bootstrap_config.py](docker/bootstrap_config.py), which updates `~/.nanobot/config.json` with `${VAR}` placeholders for any provider keys present in the environment, so nanobot can resolve secrets at runtime without storing raw keys in the mounted file.
 

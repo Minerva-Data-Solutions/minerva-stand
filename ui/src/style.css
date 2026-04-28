@@ -14,31 +14,31 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-white/[0.08] rounded-full;
+    @apply bg-base-content/[0.12] rounded-full;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-white/[0.15];
+    @apply bg-base-content/20;
   }
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+    scrollbar-color: rgba(25, 25, 25, 0.12) transparent;
   }
 }
 
 @layer components {
   .btn-ghost-primary {
-    @apply btn bg-primary/10 text-primary border border-primary/20
-      hover:bg-primary/20 hover:border-primary/35 transition-all;
+    @apply btn bg-primary/10 text-primary border border-primary/25
+      hover:bg-primary/[0.16] hover:border-primary/40 transition-all;
   }
 
   .input-minerva {
-    @apply bg-base-200/60 border-white/[0.08] text-base-content placeholder-base-content/25
-      focus:border-primary/50 focus:outline-none focus:ring-0;
+    @apply bg-base-100 border border-base-300/90 text-base-content placeholder-base-content/35
+      focus:border-primary/55 focus:outline-none focus:ring-0;
     transition: border-color 0.15s ease;
   }
   .input-minerva:focus {
-    box-shadow: 0 0 0 1px rgba(226, 77, 39, 0.15);
+    box-shadow: 0 0 0 1px rgba(212, 84, 44, 0.12);
   }
 }
 
@@ -46,18 +46,18 @@
   .bg-dots {
     background-image: radial-gradient(
       circle,
-      rgba(226, 77, 39, 0.07) 1px,
+      rgba(212, 84, 44, 0.06) 1px,
       transparent 1px
     );
     background-size: 22px 22px;
   }
 
   .text-glow {
-    text-shadow: 0 0 28px rgba(226, 77, 39, 0.3);
+    text-shadow: 0 0 24px rgba(212, 84, 44, 0.12);
   }
 
   .border-subtle {
-    border-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(25, 25, 25, 0.08);
   }
 
   .msg-enter-active {
@@ -65,10 +65,10 @@
   }
 
   .surface {
-    @apply bg-base-100 border border-subtle rounded-xl;
+    @apply bg-base-100 border border-base-300/80 rounded-xl shadow-sm;
   }
 
   .surface-2 {
-    @apply bg-base-200/50 border border-subtle rounded-xl;
+    @apply bg-base-200/70 border border-base-300/70 rounded-xl;
   }
 }

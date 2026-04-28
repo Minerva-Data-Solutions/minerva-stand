@@ -109,7 +109,7 @@ def _cors_headers(request: web.Request, rt: WorkbenchRuntime) -> dict[str, str]:
         return {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+            "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
         }
     return {}
@@ -357,6 +357,102 @@ async def handle_workbench_files_write(request: web.Request) -> web.Response:
     return web.json_response({"ok": True})
 
 
+_BOOTSTRAP_FILES = ("AGENTS.md", "SOUL.md", "USER.md", "TOOLS.md", "GUARDRAIL.md", "HEARTBEAT.md")
+
+
+async def handle_workbench_bootstrap_status(request: web.Request) -> web.Response:
+    err = _require_wb_auth(request)
+    if err:
+        return err
+    rt: WorkbenchRuntime = request.app["workbench"]
+    root = rt.workspace_root.resolve()
+    files = []
+    for name in _BOOTSTRAP_FILES:
+        p = root / name
+        if p.is_file():
+            try:
+                st = p.stat()
+                files.append(
+                    {
+                        "name": name,
+                        "present": True,
+                        "size": st.st_size,
+                        "mtime": int(st.st_mtime),
+                    }
+                )
+            except OSError:
+                files.append({"name": name, "present": True, "size": 0, "mtime": 0})
+        else:
+            files.append({"name": name, "present": False, "size": 0, "mtime": 0})
+    return web.json_response({"workspaceRoot": str(root), "files": files})
+
+
+async def handle_workbench_bootstrap_seed(request: web.Request) -> web.Response:
+    err = _require_wb_auth(request)
+    if err:
+        return err
+    rt: WorkbenchRuntime = request.app["workbench"]
+    from nanobot.utils.helpers import sync_workspace_templates
+
+    try:
+        added = sync_workspace_templates(rt.workspace_root, silent=True)
+    except Exception as e:
+        logger.exception("bootstrap seed failed")
+        return _error_json(500, str(e))
+    return web.json_response({"added": added})
+
+
+async def handle_workbench_files_mkdir(request: web.Request) -> web.Response:
+    err = _require_wb_auth(request)
+    if err:
+        return err
+    rt: WorkbenchRuntime = request.app["workbench"]
+    try:
+        body = await request.json()
+    except Exception:
+        return _error_json(400, "Invalid JSON body")
+    rel = body.get("path") if isinstance(body.get("path"), str) else ""
+    if not rel or not rel.strip():
+        return _error_json(400, "path required")
+    root = rt.workspace_root.resolve()
+    target = _safe_under_root(root, rel)
+    if target is None or target == root:
+        return _error_json(400, "Invalid path")
+    if target.exists():
+        return _error_json(409, "Already exists")
+    try:
+        target.mkdir(parents=True, exist_ok=False)
+    except OSError as e:
+        return _error_json(500, str(e))
+    return web.json_response({"ok": True, "path": rel})
+
+
+async def handle_workbench_files_delete(request: web.Request) -> web.Response:
+    err = _require_wb_auth(request)
+    if err:
+        return err
+    rt: WorkbenchRuntime = request.app["workbench"]
+    rel = request.query.get("path", "") or ""
+    if not rel.strip():
+        return _error_json(400, "path required")
+    root = rt.workspace_root.resolve()
+    target = _safe_under_root(root, rel)
+    if target is None or target == root:
+        return _error_json(400, "Invalid path")
+    if not target.exists():
+        return _error_json(404, "Not found")
+    try:
+        if target.is_dir():
+            import shutil
+
+            shutil.rmtree(target)
+        else:
+            target.unlink()
+    except OSError as e:
+        return _error_json(500, str(e))
+    return web.json_response({"ok": True})
+
+
 async def handle_workbench_sqlite_tables(request: web.Request) -> web.Response:
     err = _require_wb_auth(request)
     if err:
@@ -422,5 +518,9 @@ def register_workbench_routes(app: web.Application, rt: WorkbenchRuntime) -> Non
     app.router.add_get("/api/workbench/files", handle_workbench_files_list)
     app.router.add_get("/api/workbench/files/content", handle_workbench_files_read)
     app.router.add_put("/api/workbench/files/content", handle_workbench_files_write)
+    app.router.add_post("/api/workbench/files/mkdir", handle_workbench_files_mkdir)
+    app.router.add_delete("/api/workbench/files", handle_workbench_files_delete)
+    app.router.add_get("/api/workbench/bootstrap", handle_workbench_bootstrap_status)
+    app.router.add_post("/api/workbench/bootstrap/seed", handle_workbench_bootstrap_seed)
     app.router.add_get("/api/workbench/sqlite/tables", handle_workbench_sqlite_tables)
     app.router.add_post("/api/workbench/sqlite/query", handle_workbench_sqlite_query)
